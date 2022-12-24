@@ -1,0 +1,28 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "VisualEditor0",
+            "Effect": "Allow",
+            "Action": [
+                "waf:ListIPSets",
+                "wafv2:ListIPSets"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Sid": "VisualEditor1",
+            "Effect": "Allow",
+            "Action": [
+                "waf:UpdateIPSet",
+                "waf:GetIPSet",
+                "wafv2:GetIPSet",
+                "wafv2:UpdateIPSet"
+            ],
+            "Resource": [
+                "arn:aws:wafv2:<region>:<aws-account>:*/ipset/*/*",
+                "arn:aws:waf::<aws-account>:ipset/*"
+            ]
+        }
+    ]
+}
