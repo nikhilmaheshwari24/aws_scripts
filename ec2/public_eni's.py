@@ -40,7 +40,17 @@ for profile in profiles:
                     publicIp_dict['NetworkInterfaceId'] = interface['NetworkInterfaceId']
                     publicIp_dict['InterfaceType'] = interface['InterfaceType']
                     publicIp_dict['PublicIP'] = interface['Association']['PublicIp']
-
+                    # Fetching Vpc Cidr Blocks
+                    vpc_response = ec2.describe_vpcs(VpcIds=[interface['VpcId']])
+                    vpc_cidr=[]
+                    if 'Vpcs' in vpc_response and len(vpc_response['Vpcs']) > 0:
+                        vpc = vpc_response['Vpcs'][0]
+                        cidr_block = vpc.get('CidrBlockAssociationSet', [])
+                        for cidr in cidr_block:
+                            if cidr['CidrBlockState']['State'] == 'associated':
+                                vpc_cidr.append(cidr['CidrBlock'])
+                    publicIp_dict['Cidr_Associated_With_Vpc'] = vpc_cidr                    
+                    
                     # Print public IP information
                     print(interface['OwnerId'], interface['InterfaceType'], interface['Association']['PublicIp'], region)
                 else:
