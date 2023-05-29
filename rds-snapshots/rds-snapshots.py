@@ -79,5 +79,5 @@ for region in regions:
 
 df = pd.DataFrame(manual_snapshots)
 # print(df)
-filename="Delhivery-" + env + ".csv"
+filename="RDS-" + env + ".csv"
 df.to_csv(filename)

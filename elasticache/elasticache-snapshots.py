@@ -69,5 +69,5 @@ for region in regions:
 
 df = pd.DataFrame(manual_snapshots)
 # print(df)
-filename="Delhivery-" + env + ".csv"
+filename="ElastiCache" + env + ".csv"
 df.to_csv(filename)
