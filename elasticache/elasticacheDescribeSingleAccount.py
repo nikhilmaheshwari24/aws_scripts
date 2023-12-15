@@ -3,6 +3,8 @@ import os
 import sys
 import pandas as pd
 
+# Command python3.11 elasticacheDescribeSingleAccount.py <profile_name>
+
 # Setting up the AWS Environment
 env = str(sys.argv[1])  # Accepts the AWS profile name from the command line argument
 os.environ['AWS_PROFILE'] = env  # Set the AWS profile using environment variables
@@ -25,6 +27,7 @@ for region in regions:
             # Dictionary to store Elasticache cluster details
             elasticache_dict = {
                 'Region': region,
+                'ReplicationGroupId': cluster['ReplicationGroupId'],
                 'CacheClusterId': cluster['CacheClusterId'],
                 'Engine': cluster['Engine'],
                 'EngineVersion': cluster['EngineVersion'],
