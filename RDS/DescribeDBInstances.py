@@ -66,3 +66,6 @@ dataframe = pd.DataFrame(rds_info)
 # Save DataFrame to a CSV file
 filename = "RDS_Instances.csv"
 dataframe.to_csv(filename, index=False)
+
+# References:
+# - https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/rds/paginator/DescribeDBInstances.html
