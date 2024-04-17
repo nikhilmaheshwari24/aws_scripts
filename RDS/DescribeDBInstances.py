@@ -1,71 +1,141 @@
+# Import necessary libraries
 import boto3
 import os
 import pandas as pd
 
-# Set AWS profile
-os.environ['AWS_PROFILE'] = '683738265913_admin_exp_permission_set'
+# Set AWS profile environment variable
+os.environ['AWS_PROFILE'] = ""
 
-# Enter the region
-regions=['us-east-2']
+# Define AWS regions to search for RDS instances
+regions = ['us-east-1']
 
-# List to store RDS instance details
+# Initialize an empty list to store RDS instance details
 rds_info = []
 
-# Iterate over each region
+# Iterate over each AWS region
 for region in regions:
-    # Create an RDS client
+
+    # Create an RDS client for the specified region
     rds_client = boto3.client('rds', region_name=region)
-    
-    # Create a paginator for describe_db_instances API
+
+    # Create a paginator for the describe_db_instances operation
     paginator = rds_client.get_paginator('describe_db_instances')
-    
-    # Paginate through the results
-    rds_paginator = paginator.paginate(PaginationConfig={'PageSize': 50})
 
-    # Iterate over each page of RDS instances
+    # Paginate through the RDS instances
+    rds_paginator = paginator.paginate(PaginationConfig={'PageSize': 100})
+
     for page in rds_paginator:
-        # Iterate over each RDS instance
-        for instance in page['DBInstances']:
-            # Dictionary to store instance details
-            instance_details = {}
 
-            # Populate instance details
-            instance_details['DBInstanceIdentifier'] = instance['DBInstanceIdentifier']
-            instance_details['DBInstanceClass'] = instance['DBInstanceClass']
-            instance_details['Engine'] = instance['Engine']
-            instance_details['EngineVersion'] = instance['EngineVersion']
-            instance_details['DBInstanceStatus'] = instance['DBInstanceStatus']
-            instance_details['Endpoint_Address'] = instance['Endpoint']['Address']
-            instance_details['Endpoint_Port'] = instance['Endpoint']['Port']
-            instance_details['AllocatedStorage'] = instance['AllocatedStorage']
-            instance_details['MultiAZ'] = instance['MultiAZ']
-            instance_details['BackupRetentionPeriod'] = instance['BackupRetentionPeriod']
-            instance_details['PreferredMaintenanceWindow'] = instance['PreferredMaintenanceWindow']
-            instance_details['AutoMinorVersionUpgrade'] = instance['AutoMinorVersionUpgrade']
-            instance_details['PubliclyAccessible'] = instance['PubliclyAccessible']
-            instance_details['StorageType'] = instance['StorageType']
-            instance_details['Iops'] = instance['Iops']
-            instance_details['StorageThroughput'] = instance['StorageThroughput']
-            instance_details['CopyTagsToSnapshot'] = instance['CopyTagsToSnapshot']
+        # Iterate through each RDS instance in the current page
+        for db_instance in page['DBInstances']:
 
-            # Add PerformanceInsightsRetentionPeriod only if PerformanceInsightsEnabled is True
-            if instance['PerformanceInsightsEnabled']:
-                instance_details['PerformanceInsightsRetentionPeriod'] = instance['PerformanceInsightsRetentionPeriod']
-          
-            instance_details['PerformanceInsightsEnabled'] = instance['PerformanceInsightsEnabled']
-            instance_details['DeletionProtection'] = instance['DeletionProtection']
-            instance_details['TagList'] = instance['TagList']
+            # Initialize a dictionary to store details of the current RDS instance
+            rds_details = {}
 
-            # Append instance details to the list
-            rds_info.append(instance_details)
-            print(instance['DBInstanceIdentifier'])
+            # Assign values to dictionary keys
+            rds_details['DBInstanceIdentifier'] = db_instance['DBInstanceIdentifier']
+            rds_details['DBInstanceClass'] = db_instance['DBInstanceClass']
+            rds_details['Engine'] = db_instance['Engine']
+            rds_details['DBInstanceStatus'] = db_instance['DBInstanceStatus']
+            rds_details['AutomaticRestartTime'] = db_instance.get('AutomaticRestartTime', None)
+            rds_details['MasterUsername'] = db_instance.get('MasterUsername', None)
+            rds_details['DBName'] = db_instance.get('DBName', None)
+            rds_details['Endpoint_Address'] = db_instance['Endpoint']['Address']
+            rds_details['Endpoint_Port'] = db_instance['Endpoint']['Port']
+            rds_details['AllocatedStorage'] = db_instance['AllocatedStorage']
+            rds_details['InstanceCreateTime'] = db_instance['InstanceCreateTime']
+            rds_details['PreferredBackupWindow'] = db_instance['PreferredBackupWindow']
+            rds_details['BackupRetentionPeriod'] = db_instance['BackupRetentionPeriod']
+            rds_details['DBSecurityGroups'] = [group['DBSecurityGroupName'] for group in db_instance['DBSecurityGroups']]
+            rds_details['VpcSecurityGroups'] = [group['VpcSecurityGroupId'] for group in db_instance['VpcSecurityGroups']]
+            rds_details['DBParameterGroups'] = [group['DBParameterGroupName'] for group in db_instance['DBParameterGroups']]
+            rds_details['AvailabilityZone'] = db_instance['AvailabilityZone']
+            rds_details['DBSubnetGroup_DBSubnetGroupName'] = db_instance['DBSubnetGroup']['DBSubnetGroupName']
+            rds_details['MultiAZ'] = db_instance['MultiAZ']
+            rds_details['EngineVersion'] = db_instance['EngineVersion']
+            rds_details['ReadReplicaSourceDBInstanceIdentifier'] = db_instance.get('ReadReplicaSourceDBInstanceIdentifier', None)
+            rds_details['ReadReplicaDBInstanceIdentifiers'] = db_instance['ReadReplicaDBInstanceIdentifiers']
+            rds_details['ReadReplicaDBClusterIdentifiers'] = db_instance.get('ReadReplicaDBClusterIdentifiers', None)
+            rds_details['ReplicaMode'] = db_instance.get('ReplicaMode',None)
+            rds_details['PubliclyAccessible'] = db_instance['PubliclyAccessible']
+            rds_details['TdeCredentialArn'] = db_instance.get('TdeCredentialArn', None)
+            rds_details['DbInstancePort'] = db_instance['DbInstancePort']
+            rds_details['StorageEncrypted'] = db_instance['StorageEncrypted']
+            rds_details['KmsKeyId'] = db_instance['KmsKeyId']
+            rds_details['DbiResourceId'] = db_instance['DbiResourceId']
+            rds_details['CACertificateIdentifier'] = db_instance['CACertificateIdentifier']
+            rds_details['MonitoringInterval'] = db_instance['MonitoringInterval']
+            rds_details['EnhancedMonitoringResourceArn'] = db_instance.get('EnhancedMonitoringResourceArn', None)
+            rds_details['MonitoringRoleArn'] = db_instance.get('MonitoringRoleArn', None)
+            rds_details['IAMDatabaseAuthenticationEnabled'] = db_instance['IAMDatabaseAuthenticationEnabled']
+            rds_details['EnabledCloudwatchLogsExports'] = db_instance.get('EnabledCloudwatchLogsExports', None)
+            rds_details['TagList'] = db_instance['TagList']
+            rds_details['DeletionProtection'] = db_instance['DeletionProtection']
+            rds_details['MaxAllocatedStorage'] = db_instance.get('MaxAllocatedStorage', None)
+            rds_details['AssociatedRoles'] = db_instance['AssociatedRoles']
+            rds_details['PreferredMaintenanceWindow'] = db_instance['PreferredMaintenanceWindow']
+            rds_details['AutoMinorVersionUpgrade'] = db_instance['AutoMinorVersionUpgrade']
+            rds_details['StorageType'] = db_instance['StorageType']
+            rds_details['Iops'] = db_instance.get('Iops', None)
+            rds_details['StorageThroughput'] = db_instance.get('StorageThroughput', None)
+            rds_details['CopyTagsToSnapshot'] = db_instance['CopyTagsToSnapshot']
+            rds_details['PerformanceInsightsEnabled'] = db_instance.get('PerformanceInsightsEnabled', None)
+            rds_details['PerformanceInsightsKMSKeyId'] = db_instance.get('PerformanceInsightsKMSKeyId', None)
+            rds_details['PerformanceInsightsRetentionPeriod'] = db_instance.get('PerformanceInsightsRetentionPeriod', None)
+            rds_details['DeletionProtection'] = db_instance['DeletionProtection']
+            rds_details['DBClusterIdentifier'] = db_instance.get('DBClusterIdentifier', None)
+            rds_details['DBSubnetGroupName'] = db_instance['DBSubnetGroup']['DBSubnetGroupName']
+            rds_details['DBSubnetGroupDescription'] = db_instance['DBSubnetGroup']['DBSubnetGroupDescription']
+            rds_details['VpcId'] = db_instance['DBSubnetGroup']['VpcId']
+            rds_details['SubnetGroupStatus'] = db_instance['DBSubnetGroup']['SubnetGroupStatus']
+            rds_details['DBInstanceAutomatedBackupsReplications'] = db_instance.get('DBInstanceAutomatedBackupsReplications', None)
+            rds_details['CertificateDetails'] = db_instance['CertificateDetails']
+            rds_details['ReadReplicaSourceDBClusterIdentifier'] = db_instance.get('ReadReplicaSourceDBClusterIdentifier', None)
 
-# Create a DataFrame from the list of instance details
-dataframe = pd.DataFrame(rds_info)
+            if 'MasterUserSecret' in db_instance:
+                rds_details['MasterUserSecret'] = {
+                    'SecretArn': db_instance['MasterUserSecret'].get('SecretArn', None),
+                    'SecretStatus': db_instance['MasterUserSecret'].get('SecretStatus', None),
+                    'KmsKeyId': db_instance['MasterUserSecret'].get('KmsKeyId', None)
+                }
+            else:
+                rds_details['MasterUserSecret'] = {
+                    'SecretArn': None,
+                    'SecretStatus': None,
+                    'KmsKeyId': None
+                }
 
-# Save DataFrame to a CSV file
-filename = "RDS_Instances.csv"
-dataframe.to_csv(filename, index=False)
+            rds_details['CertificateDetails'] = {
+                'CAIdentifier': db_instance['CertificateDetails']['CAIdentifier'],
+                'ValidTill': db_instance['CertificateDetails']['ValidTill']
+            }
+            rds_details['ReadReplicaSourceDBClusterIdentifier'] = db_instance.get('ReadReplicaSourceDBClusterIdentifier', None)
+            rds_details['PercentProgress'] = db_instance.get('PercentProgress', None)
+            rds_details['DedicatedLogVolume'] = db_instance.get('DedicatedLogVolume', None)
+            rds_details['IsStorageConfigUpgradeAvailable'] = db_instance.get('IsStorageConfigUpgradeAvailable', None)
+            rds_details['MultiTenant'] = db_instance.get('MultiTenant', None)
+            rds_details['CustomerOwnedIpEnabled'] = db_instance['CustomerOwnedIpEnabled']
+            rds_details['AwsBackupRecoveryPointArn'] = db_instance.get('AwsBackupRecoveryPointArn', None)
+            rds_details['ActivityStreamStatus'] = db_instance['ActivityStreamStatus']
+            rds_details['ActivityStreamKmsKeyId'] = db_instance.get('ActivityStreamKmsKeyId', None)
+            rds_details['ActivityStreamKinesisStreamName'] = db_instance.get('ActivityStreamKinesisStreamName', None)
+            rds_details['ActivityStreamMode'] = db_instance.get('ActivityStreamMode', None)
+            rds_details['ActivityStreamEngineNativeAuditFieldsIncluded'] = db_instance.get('ActivityStreamEngineNativeAuditFieldsIncluded', None)
+            rds_details['AutomationMode'] = db_instance.get('AutomationMode', None)
+            rds_details['ResumeFullAutomationModeTime'] = db_instance.get('ResumeFullAutomationModeTime', None)
+            rds_details['CustomIamInstanceProfile'] = db_instance.get('CustomIamInstanceProfile', None)
+            rds_details['BackupTarget'] = db_instance.get('BackupTarget', None)
+            rds_details['NetworkType'] = db_instance.get('NetworkType', None)
+            rds_details['ActivityStreamPolicyStatus'] = db_instance.get('ActivityStreamPolicyStatus', None)
+            rds_details['StorageThroughput'] = db_instance.get('StorageThroughput', None)
+            rds_details['DBSystemId'] = db_instance.get('DBSystemId', None)
 
-# References:
-# - https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/rds/paginator/DescribeDBInstances.html
+            # Append the details of the current RDS instance to the list
+            rds_info.append(rds_details)
+
+# Create a DataFrame using pandas
+df = pd.DataFrame(rds_info)
+
+# Write the DataFrame to a CSV file
+csv_filename = 'rds_describe.csv'
+df.to_csv(csv_filename, index=False)
