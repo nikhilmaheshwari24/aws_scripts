@@ -26,6 +26,7 @@ for region in regions:
     # Paginate through instances
     instances_paginator = ec2_paginator.paginate(InstanceIds=instance_ids)
     
+    # Iterate through each page of instances
     for page in instances_paginator:
         for reservation in page['Reservations']:
             for instance in reservation['Instances']:

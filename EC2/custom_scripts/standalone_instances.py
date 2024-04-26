@@ -4,7 +4,6 @@ import sys
 import csv
 import pandas as pd
 
-# env=str(sys.argv[1])
 # os.environ['AWS_PROFILE'] = env
 
 regions = ['us-east-1', 'ap-southeast-1', 'ap-south-1']
@@ -68,9 +67,6 @@ for profile in profiles:
 # Create a DataFrame from the list
 df = pd.DataFrame(instance_list)
 
-# Print the DataFrame
-print(df)
-
 # Export the DataFrame to a CSV file
 filename = 'Standalone_Instances.csv'
-df.to_csv(filename)
+df.to_csv(filename, Index=False)

@@ -1,6 +1,8 @@
 import boto3
 import pandas as pd
 
+""" This script retrieves information about network interfaces with public IP associations across multiple AWS regions and profiles. It can be used for auditing, monitoring, or managing public IP usage within an organization's AWS infrastructure. """
+
 # List of regions to iterate over
 regions = ['ap-southeast-1', 'us-east-1', 'ap-south-1']
 
@@ -9,23 +11,22 @@ session = boto3.Session()
 
 # Get available profiles from the session
 profiles = session.available_profiles
-# print(profiles)
 
 # List to store public IP information
 ip_list = []
 
-# Iterate over each profile
+# Iterate over each profile and region
 for profile in profiles:
-    # Iterate over each region
+
     for region in regions:
         # Create a session with the current profile
         profile_session = boto3.session.Session(profile_name=profile)
         
         # Create an EC2 client for the region
-        net_interfaces = profile_session.client('ec2', region_name=region)
+        ec2_client = profile_session.client('ec2', region_name=region)
         
         # Use a paginator to retrieve network interfaces
-        paginator = net_interfaces.get_paginator('describe_network_interfaces')
+        paginator = ec2_client.get_paginator('describe_network_interfaces')
         net_interfaces_paginator = paginator.paginate(PaginationConfig={'PageSize': 50})
         
         # Iterate over each page of network interfaces
@@ -41,7 +42,7 @@ for profile in profiles:
                     publicIp_dict['InterfaceType'] = interface['InterfaceType']
                     publicIp_dict['PublicIP'] = interface['Association']['PublicIp']
                     # Fetching Vpc Cidr Blocks
-                    vpc_response = ec2.describe_vpcs(VpcIds=[interface['VpcId']])
+                    vpc_response = ec2_client.describe_vpcs(VpcIds=[interface['VpcId']])
                     vpc_cidr=[]
                     if 'Vpcs' in vpc_response and len(vpc_response['Vpcs']) > 0:
                         vpc = vpc_response['Vpcs'][0]
@@ -63,9 +64,6 @@ for profile in profiles:
 # Create a DataFrame from the list
 df = pd.DataFrame(ip_list)
 
-# Print the DataFrame
-print(df)
-
 # Export the DataFrame to a CSV file
 filename = "org_public_ips.csv"
-df.to_csv(filename)
+df.to_csv(filename, index=False)
