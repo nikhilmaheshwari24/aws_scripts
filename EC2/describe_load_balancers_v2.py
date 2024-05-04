@@ -1,10 +1,10 @@
 import boto3
 import os
 import pandas as pd
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 # Set AWS profile environment variable
-os.environ['AWS_PROFILE'] = ''
+os.environ['AWS_PROFILE'] = '683738265913_admin_exp_permission_set'
 
 # Define AWS regions to search for ELBv2 load balancers
 regions = ['us-east-2']
@@ -53,6 +53,56 @@ def get_attributes(resource_attributes):
         return '\n'.join(attribute_list)
     else:
         return "No Attributes Available"
+ 
+# Function to get request metrics for ELBsv2 ALB
+def get_request_metrics(elbv2_name, region):
+    cloudwatch = boto3.client('cloudwatch', region_name=region)
+    end_time = datetime.utcnow()
+    start_time = end_time - timedelta(days=14)
+    start_time_str = start_time.strftime('%Y-%m-%dT%H:%M:%S')
+    end_time_str = end_time.strftime('%Y-%m-%dT%H:%M:%S')
+    response = cloudwatch.get_metric_statistics(
+        Namespace='AWS/ApplicationELB',
+        MetricName='RequestCount',
+        Dimensions=[
+            {'Name': 'LoadBalancer', 'Value': elbv2_name},
+        ],
+        StartTime=start_time_str,
+        EndTime=end_time_str,
+        Period=86400,
+        Statistics=['Sum'],
+        Unit='Count'
+    )
+    if 'Datapoints' in response:
+        datapoints = response['Datapoints']
+        if datapoints:
+            return int(datapoints[0]['Sum'])
+    return None
+
+# Function to get active_flow_count metrics for ELBsv2 NLB
+def get_active_flow_count_metrics(elbv2_name, region):
+    cloudwatch = boto3.client('cloudwatch', region_name=region)
+    end_time = datetime.utcnow()
+    start_time = end_time - timedelta(days=14)
+    start_time_str = start_time.strftime('%Y-%m-%dT%H:%M:%S')
+    end_time_str = end_time.strftime('%Y-%m-%dT%H:%M:%S')
+    response = cloudwatch.get_metric_statistics(
+        Namespace='AWS/NetworkELB',
+        MetricName='ActiveFlowCount',
+        Dimensions=[
+            {'Name': 'LoadBalancer', 'Value': elbv2_name},
+        ],
+        StartTime=start_time_str,
+        EndTime=end_time_str,
+        Period=86400,
+        Statistics=['Sum'],
+        Unit='Count'
+    )
+    if 'Datapoints' in response:
+        datapoints = response['Datapoints']
+        if datapoints:
+            return int(datapoints[0]['Sum'])
+    return None
 
 # Iterate over each region
 for region in regions:
@@ -88,10 +138,17 @@ for region in regions:
             elb_dict['ELBv2_Attributes'] = elbv2_attributes
             # Extract ELBv2 load balancer tags
             elb_dict['Tags'] = resource_tags(elbv2_client.describe_tags(ResourceArns=[str(elbv2['LoadBalancerArn'])])['TagDescriptions'][0].get('Tags', []))
+            # Extract ELBv2 Active Flow Count (NLB) & Request Count (ALB) metrics
+            if elbv2['Type'] == 'network':
+                elb_dict['NLB: ActiveFLowCount / ALB: RequestCount'] = get_active_flow_count_metrics(elbv2['LoadBalancerArn'].rsplit("loadbalancer/", 1)[-1],region)
+            else:
+                elb_dict['NLB: ActiveFLowCount / ALB: RequestCount'] = get_request_metrics(elbv2['LoadBalancerArn'].rsplit("loadbalancer/", 1)[-1],region)
+
             # Append ELBv2 load balancer details to the list
             elbsv2_list.append(elb_dict)
+
             # Print ELBv2 Name
-            print(elbv2['LoadBalancerName'])
+            print(elbv2['LoadBalancerArn'].rsplit("loadbalancer/", 1)[-1], " <> " ,elb_dict['Type'], " <> " ,elb_dict['NLB: ActiveFLowCount / ALB: RequestCount'])
 
 # Create DataFrame
 df = pd.DataFrame(elbsv2_list)

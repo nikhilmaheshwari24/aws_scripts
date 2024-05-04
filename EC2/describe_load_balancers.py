@@ -39,6 +39,31 @@ def resource_tags(resource_tags_list):
     else:
         return "No Tags Available"
 
+# Function to get request metrics for ELBs
+def get_request_metrics(elb_name, region):
+    cloudwatch = boto3.client('cloudwatch', region_name=region)
+    end_time = datetime.utcnow()
+    start_time = end_time - timedelta(days=14)
+    start_time_str = start_time.strftime('%Y-%m-%dT%H:%M:%S')
+    end_time_str = end_time.strftime('%Y-%m-%dT%H:%M:%S')
+    response = cloudwatch.get_metric_statistics(
+        Namespace='AWS/ELB',
+        MetricName='RequestCount',
+        Dimensions=[
+            {'Name': 'LoadBalancerName', 'Value': elb_name},
+        ],
+        StartTime=start_time_str,
+        EndTime=end_time_str,
+        Period=86400,
+        Statistics=['Sum'],
+        Unit='Count'
+    )
+    if 'Datapoints' in response:
+        datapoints = response['Datapoints']
+        if datapoints:
+            return int(datapoints[0]['Sum'])
+    return None
+
 # Iterate over each region
 for region in regions:
     # Create an ELB client for the region
