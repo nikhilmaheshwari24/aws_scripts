@@ -384,5 +384,7 @@ for bucket in buckets:
 df = pd.DataFrame(bucket_list)
 
 # Write the DataFrame to a CSV file
-csv_filename = 'selected_s3_bucket_info.csv'
-df.to_csv(csv_filename, index=False)
+filename = 'selected_s3_bucket_info.csv'
+df.to_csv(os.path.join(directory, filename), index=False)
+
+print("Script execution completed. CSV file saved as:", os.path.join(directory, filename))
