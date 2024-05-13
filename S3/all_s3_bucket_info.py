@@ -290,17 +290,27 @@ def check_server_access_logging(bucket_name):
 def check_transfer_acceleration(bucket_name):
     try:
         response = s3_client.get_bucket_accelerate_configuration(Bucket=bucket_name)
-        return response['Status']
-    except Exception as e:
-        return str(e)
+        return response.get('Status', 'Not Configured')
+    except botocore.exceptions.ClientError as e:
+        error_code = e.response.get('Error', {}).get('Code')
+        if error_code == 'NoSuchBucket':
+            return "Bucket Not Found"
+        elif error_code == 'TransferAccelerationConfigurationNotFoundError':
+            return "Not Configured"
+        else:
+            return str(e)
 
 # Get Replication Bucket Name
 def get_replication_bucket_name(bucket_name):
     try:
         response = s3_client.get_bucket_replication(Bucket=bucket_name)
         return response['ReplicationConfiguration']['Rules'][0]['Destination']['Bucket']
-    except Exception as e:
-        return str(e)
+    except botocore.exceptions.ClientError as e:
+        error_code = e.response.get('Error', {}).get('Code')
+        if error_code == 'ReplicationConfigurationNotFoundError':
+            return "Not Configured"
+        else:
+            return str(e)
 
 # Initialize an empty list to store bucket information
 bucket_list = []
